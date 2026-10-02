@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Manage Roles</title>
+<style>
+  :root {
+    --bg: #090A10;
+    --panel: rgba(255,255,255,0.045);
+    --panel-border: rgba(255,255,255,0.09);
+    --text: #ECEDF2;
+    --text-soft: #8B8E9C;
+    --violet: #7C6CF0;
+    --violet-soft: rgba(124,108,240,0.18);
+    --error: #F0685C;
+    --ok: #52C793;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="light"] {
+    --bg: #EDEFF5;
+    --panel: rgba(255,255,255,0.75);
+    --panel-border: rgba(20,22,30,0.08);
+    --text: #14161E;
+    --text-soft: #6A6D7C;
+  }
+  * { box-sizing: inherit; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100%;
+  }
+  .glow {
+    position: fixed; inset: -20%; z-index: 0;
+    background: radial-gradient(32% 26% at 15% 10%, rgba(124,108,240,0.22), transparent 60%);
+    filter: blur(50px); pointer-events: none;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 26px 22px 60px; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand svg { width: 26px; height: 26px; }
+  .brand span { font-weight: 650; font-size: 1.02rem; }
+  .top-actions { display: flex; align-items: center; gap: 10px; }
+  .icon-btn, .nav-link {
+    padding: 8px 14px; border-radius: 999px; background: var(--panel); border: 1px solid var(--panel-border);
+    color: var(--text-soft); font-size: 0.82rem; text-decoration: none; cursor: pointer; backdrop-filter: blur(10px);
+  }
+  .user-chip { padding: 6px 12px; border-radius: 999px; background: var(--violet-soft); color: var(--violet); font-size: 0.78rem; font-weight: 650; }
+
+  h1.page-title { font-size: 1.5rem; margin: 0 0 4px; }
+  p.page-sub { margin: 0 0 22px; color: var(--text-soft); font-size: 0.92rem; }
+
+  .panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 20px 22px; backdrop-filter: blur(14px); margin-bottom: 20px; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .panel-head h2 { font-size: 1.05rem; margin: 0; }
+
+  input, select {
+    font: inherit; font-size: 0.88rem; color: var(--text);
+    background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border); border-radius: 8px;
+    padding: 8px 11px; outline: none;
+  }
+
+  .btn { padding: 8px 14px; border-radius: 8px; border: none; font: inherit; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
+  .btn-ghost { background: transparent; border: 1px solid var(--panel-border); color: var(--text-soft); }
+  .btn-primary { background: var(--violet); color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { text-align: left; font-size: 0.76rem; color: var(--text-soft); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--panel-border); }
+  tbody td { padding: 10px; border-bottom: 1px solid var(--panel-border); font-size: 0.88rem; }
+  .role-pill { padding: 3px 10px; border-radius: 999px; font-size: 0.74rem; font-weight: 600; background: var(--violet-soft); color: var(--violet); text-transform: capitalize; }
+  .role-pill.none { background: rgba(139,142,156,0.15); color: var(--text-soft); }
+
+  .msg { font-size: 0.82rem; margin-top: 8px; }
+  .msg.error { color: var(--error); }
+  .msg.success { color: var(--ok); }
+  .denied { text-align: center; padding: 60px 20px; color: var(--text-soft); }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 26 26" fill="none">
+        <rect x="1" y="1" width="24" height="24" rx="6" stroke="#7C6CF0" stroke-width="1.6"/>
+        <path d="M7.5 17V9L13 12.5L18.5 9V17" stroke="#7C6CF0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Employee Portal</span>
+    </div>
+    <div class="top-actions">
+      <a class="nav-link" href="requests.html">Requests</a>
+      <a class="nav-link" href="dashboard.html">Tracker</a>
+      <span class="user-chip" id="userChip">—</span>
+      <button class="icon-btn" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <div id="content">
+    <h1 class="page-title">Manage Roles</h1>
+    <p class="page-sub">Assign roles to employees. Only Admin and CEO can see this page.</p>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Assign a role</h2></div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <input type="text" id="roleEmployeeId" placeholder="Employee ID" style="max-width:160px;">
+        <select id="roleSelect">
+          <option value="employee">Employee</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="purchasing">Purchasing</option>
+          <option value="accounting">Accounting</option>
+          <option value="ceo">CEO</option>
+          <option value="admin">Admin</option>
+          <option value="">No role (unassign)</option>
+        </select>
+        <button class="btn btn-primary" id="updateRoleBtn">Update role</button>
+      </div>
+      <div class="msg" id="roleMsg"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>All employees</h2><button class="btn btn-ghost" id="refreshBtn">Refresh</button></div>
+      <table>
+        <thead><tr><th>Name</th><th>Employee ID</th><th>Role</th></tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="denied" id="denied" style="display:none;">
+    <p>You don't have permission to view this page.</p>
+    <a class="nav-link" href="requests.html">Back to Requests</a>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = 'https://employee-portal-backend-3uzr.onrender.com';
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role') || '';
+  const firstName = localStorage.getItem('firstName') || localStorage.getItem('employeeId') || 'Account';
+
+  if (!token) {
+    window.location.href = 'login.html';
+  }
+
+  document.getElementById('userChip').textContent = firstName;
+
+  // Client-side guard for a clean experience — the API independently
+  // enforces this too, so this is convenience, not the real security boundary.
+  if (role !== 'admin' && role !== 'ceo') {
+    document.getElementById('content').style.display = 'none';
+    document.getElementById('denied').style.display = 'block';
+  }
+
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  }
+
+  async function loadUsers() {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/users`, { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      const tbody = document.getElementById('usersBody');
+      tbody.innerHTML = data.users.map(u => `
+        <tr>
+          <td>${u.firstName} ${u.lastName}</td>
+          <td>${u.employeeId}</td>
+          <td><span class="role-pill ${u.role ? '' : 'none'}">${u.role || 'No role'}</span></td>
+        </tr>`).join('');
+    } catch (err) {
+      // If the API itself rejects us (e.g. token role doesn't match server-side), show the denial state.
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('denied').style.display = 'block';
+    }
+  }
+
+  document.getElementById('updateRoleBtn').addEventListener('click', async () => {
+    const employeeId = document.getElementById('roleEmployeeId').value.trim();
+    const newRole = document.getElementById('roleSelect').value || null;
+    const msgEl = document.getElementById('roleMsg');
+
+    if (!employeeId) {
+      msgEl.textContent = 'Enter an Employee ID.';
+      msgEl.className = 'msg error';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/role/${employeeId}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      msgEl.textContent = `${data.user.firstName} ${data.user.lastName} (${data.user.employeeId}) is now ${data.user.role || 'unassigned'}.`;
+      msgEl.className = 'msg success';
+      document.getElementById('roleEmployeeId').value = '';
+      await loadUsers();
+    } catch (err) {
+      msgEl.textContent = err.message;
+      msgEl.className = 'msg error';
+    }
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('employeeName');
+    localStorage.removeItem('firstName');
+    localStorage.removeItem('employeeId');
+    localStorage.removeItem('role');
+    window.location.href = 'login.html';
+  });
+
+  if (role === 'admin' || role === 'ceo') {
+    loadUsers();
+  }
+</script>
+</body>
+</html>

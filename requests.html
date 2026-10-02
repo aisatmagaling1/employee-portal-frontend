@@ -56,9 +56,9 @@
     padding: 8px 14px; border-radius: 999px; background: var(--panel); border: 1px solid var(--panel-border);
     color: var(--text-soft); font-size: 0.82rem; text-decoration: none; cursor: pointer; backdrop-filter: blur(10px);
   }
-  .role-badge {
+  .user-chip {
     padding: 6px 12px; border-radius: 999px; background: var(--violet-soft); color: var(--violet);
-    font-size: 0.78rem; font-weight: 650; text-transform: capitalize;
+    font-size: 0.78rem; font-weight: 650;
   }
 
   h1.page-title { font-size: 1.5rem; margin: 0 0 4px; }
@@ -112,7 +112,7 @@
   .quotation-item.selected { border-color: var(--ok); background: var(--ok-soft); }
 
   .action-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .action-box input[type="text"], .action-box input[type="number"], .action-box input[type="password"] { width: auto; flex: 1; min-width: 100px; }
+  .action-box input[type="text"], .action-box input[type="number"] { width: auto; flex: 1; min-width: 100px; }
 
   .empty-note { text-align: center; padding: 20px; color: var(--text-soft); font-size: 0.88rem; }
   .msg { font-size: 0.82rem; margin-top: 8px; }
@@ -136,7 +136,8 @@
     </div>
     <div class="top-actions">
       <a class="nav-link" href="dashboard.html">Tracker</a>
-      <span class="role-badge" id="roleBadge">—</span>
+      <a class="nav-link" href="roles.html" id="manageRolesLink" style="display:none;">Manage Roles</a>
+      <span class="user-chip" id="userChip">—</span>
       <button class="icon-btn" id="themeToggle">Theme</button>
       <button class="icon-btn" id="logoutBtn">Log out</button>
     </div>
@@ -145,7 +146,7 @@
   <h1 class="page-title">Purchase Requests</h1>
   <p class="page-sub">Submit, track, and approve purchase requests from start to finish.</p>
 
-  <div class="panel" id="newRequestPanel" style="display:none;">
+  <div class="panel" id="newRequestPanel">
     <div class="panel-head"><h2>New Request</h2></div>
     <div class="form-grid">
       <div><label class="field-label">Item name</label><input type="text" id="reqItemName" placeholder="e.g. Laptop charger"></div>
@@ -158,32 +159,6 @@
     </div>
     <button class="btn btn-primary" id="submitReqBtn">Submit request</button>
     <div class="msg" id="newReqMsg"></div>
-  </div>
-
-  <div class="panel" id="rolePanel" style="display:none;">
-    <div class="panel-head"><h2>Manage Roles</h2></div>
-    <p style="color:var(--text-soft); font-size:0.85rem; margin-top:0;">Assign an employee's role by their Employee ID.</p>
-    <div class="action-box">
-      <input type="text" id="roleEmployeeId" placeholder="Employee ID" style="max-width:160px;">
-      <select id="roleSelect" style="max-width:150px;">
-        <option value="requester">Requester</option>
-        <option value="purchasing">Purchasing</option>
-        <option value="accounting">Accounting</option>
-        <option value="ceo">CEO</option>
-      </select>
-      <button class="btn btn-ghost" id="updateRoleBtn">Update role</button>
-    </div>
-    <div class="msg" id="roleMsg"></div>
-  </div>
-
-  <div class="panel" id="pinPanel" style="display:none;">
-    <div class="panel-head"><h2>Approval PIN</h2></div>
-    <p style="color:var(--text-soft); font-size:0.85rem; margin-top:0;">Set or update the PIN you'll use to approve requests.</p>
-    <div class="action-box">
-      <input type="password" id="newPinInput" placeholder="New PIN (min 4 digits)" style="max-width:180px;">
-      <button class="btn btn-ghost" id="setPinBtn">Save PIN</button>
-    </div>
-    <div class="msg" id="pinMsg"></div>
   </div>
 
   <div class="panel">
@@ -203,23 +178,17 @@
 <script>
   const API_BASE = 'https://employee-portal-backend-3uzr.onrender.com';
   const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role') || 'requester';
-  const myEmployeeId = localStorage.getItem('employeeId') || '';
+  const role = localStorage.getItem('role') || '';
+  const firstName = localStorage.getItem('firstName') || localStorage.getItem('employeeId') || 'Account';
+  const FULL_ACCESS_ROLES = ['admin', 'ceo'];
 
   if (!token) {
     window.location.href = 'login.html';
   }
 
-  document.getElementById('roleBadge').textContent = role;
-  if (role === 'requester' || role === 'ceo' || role === 'admin') {
-    document.getElementById('newRequestPanel').style.display = 'block';
-  }
-  if (role === 'ceo') {
-    document.getElementById('pinPanel').style.display = 'block';
-    document.getElementById('rolePanel').style.display = 'block';
-  }
-  if (role === 'admin') {
-    document.getElementById('rolePanel').style.display = 'block';
+  document.getElementById('userChip').textContent = firstName;
+  if (FULL_ACCESS_ROLES.includes(role)) {
+    document.getElementById('manageRolesLink').style.display = 'inline-block';
   }
 
   function authHeaders() {
@@ -261,12 +230,13 @@
 
   function actionsFor(pr) {
     const boxes = [];
+    const fullAccess = FULL_ACCESS_ROLES.includes(role);
 
-    if (role === 'admin') {
+    if (fullAccess) {
       const options = Object.entries(STATUS_LABELS).map(([val, [label]]) => `<option value="${val}" ${pr.status === val ? 'selected' : ''}>${label}</option>`).join('');
       boxes.push(`
         <div class="action-box" style="border:1px dashed var(--violet); border-radius:8px; padding:10px;">
-          <b style="width:100%; color:var(--violet); font-size:0.8rem;">Admin override — jump straight to any status</b>
+          <b style="width:100%; color:var(--violet); font-size:0.8rem;">Admin/CEO override — jump straight to any status</b>
           <select class="admin-status-select" data-id="${pr._id}">${options}</select>
           <input type="text" placeholder="Note (optional)" class="admin-note" data-id="${pr._id}">
           <button class="btn btn-primary" onclick="adminOverride('${pr._id}')">Set status</button>
@@ -276,14 +246,13 @@
     if ((role === 'ceo' || role === 'admin') && pr.status === 'pending_ceo_stock_approval') {
       boxes.push(`
         <div class="action-box">
-          <input type="password" placeholder="PIN${role === 'admin' ? ' (not required for admin)' : ''}" class="pin-input" data-id="${pr._id}" style="max-width:160px;">
           <input type="text" placeholder="Note (optional)" class="note-input" data-id="${pr._id}">
           <button class="btn btn-ok" onclick="ceoDecide('${pr._id}', 'stock', 'approve')">Approve</button>
           <button class="btn btn-danger" onclick="ceoDecide('${pr._id}', 'stock', 'reject')">Reject</button>
         </div>`);
     }
 
-    if ((role === 'purchasing' || role === 'admin') && pr.status === 'pending_purchasing') {
+    if ((role === 'purchasing' || role === 'admin' || role === 'ceo') && pr.status === 'pending_purchasing') {
       boxes.push(`
         <div class="action-box">
           <input type="text" placeholder="Vendor name" class="q-vendor" data-id="${pr._id}">
@@ -301,14 +270,13 @@
       boxes.push(`
         <div class="action-box">
           <select class="q-select" data-id="${pr._id}">${options}</select>
-          <input type="password" placeholder="PIN${role === 'admin' ? ' (not required for admin)' : ''}" class="pin-input" data-id="${pr._id}" style="max-width:160px;">
           <input type="text" placeholder="Note (optional)" class="note-input" data-id="${pr._id}">
           <button class="btn btn-ok" onclick="ceoDecide('${pr._id}', 'purchase', 'approve')">Approve selected</button>
           <button class="btn btn-danger" onclick="ceoDecide('${pr._id}', 'purchase', 'reject')">Reject all</button>
         </div>`);
     }
 
-    if ((role === 'accounting' || role === 'admin') && pr.status === 'pending_accounting') {
+    if ((role === 'accounting' || role === 'admin' || role === 'ceo') && pr.status === 'pending_accounting') {
       boxes.push(`
         <div class="action-box">
           <input type="number" placeholder="Amount paid" class="acc-amount" data-id="${pr._id}" style="max-width:130px;">
@@ -317,7 +285,7 @@
         </div>`);
     }
 
-    if ((role === 'purchasing' || role === 'admin') && pr.status === 'pending_receipt') {
+    if ((role === 'purchasing' || role === 'admin' || role === 'ceo') && pr.status === 'pending_receipt') {
       boxes.push(`
         <div class="action-box">
           <input type="text" placeholder="Note (optional)" class="recv-note" data-id="${pr._id}">
@@ -379,9 +347,8 @@
   }
 
   async function ceoDecide(id, stage, decision) {
-    const pin = document.querySelector(`.pin-input[data-id="${id}"]`).value;
     const note = document.querySelector(`.note-input[data-id="${id}"]`).value;
-    const body = { pin, decision, note };
+    const body = { decision, note };
     if (stage === 'purchase') {
       body.selectedQuotationId = document.querySelector(`.q-select[data-id="${id}"]`).value;
     }
@@ -506,54 +473,11 @@
     }
   });
 
-  document.getElementById('updateRoleBtn').addEventListener('click', async () => {
-    const employeeId = document.getElementById('roleEmployeeId').value.trim();
-    const newRole = document.getElementById('roleSelect').value;
-    const msgEl = document.getElementById('roleMsg');
-
-    if (!employeeId) {
-      msgEl.textContent = 'Enter an Employee ID.';
-      msgEl.className = 'msg error';
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/role/${employeeId}`, {
-        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ role: newRole }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      msgEl.textContent = `${data.user.fullName} (${data.user.employeeId}) is now ${data.user.role}.`;
-      msgEl.className = 'msg success';
-      document.getElementById('roleEmployeeId').value = '';
-    } catch (err) {
-      msgEl.textContent = err.message;
-      msgEl.className = 'msg error';
-    }
-  });
-
-  document.getElementById('setPinBtn').addEventListener('click', async () => {
-    const pin = document.getElementById('newPinInput').value;
-    const msgEl = document.getElementById('pinMsg');
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/set-pin`, {
-        method: 'POST', headers: authHeaders(), body: JSON.stringify({ pin }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      msgEl.textContent = 'PIN saved.';
-      msgEl.className = 'msg success';
-      document.getElementById('newPinInput').value = '';
-    } catch (err) {
-      msgEl.textContent = err.message;
-      msgEl.className = 'msg error';
-    }
-  });
-
   document.getElementById('refreshBtn').addEventListener('click', loadRequests);
   document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.removeItem('token');
     localStorage.removeItem('employeeName');
+    localStorage.removeItem('firstName');
     localStorage.removeItem('employeeId');
     localStorage.removeItem('role');
     window.location.href = 'login.html';
